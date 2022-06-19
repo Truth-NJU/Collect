@@ -1,0 +1,50 @@
+image: node:latest
+
+stages:
+    - install
+    - init-code
+    - build
+    - deploy
+
+
+cache:
+    key:
+        files:
+            - package-lock.json
+    paths:
+        - node_modules
+
+job_install:
+    stage: install
+    tags:
+        - personal
+    before_script:
+        - npm config set registry https://registry.npm.taobao.org
+    script:
+        - npm install
+
+job_build:
+    stage: build
+    tags:
+        - personal
+    script:
+        - npm run build:prod
+    artifacts:
+        paths:
+            - dist
+
+job_deploy:
+    stage: deploy
+    tags:
+        - personal
+    before_script:
+        - 'which ssh-agent || ( yum update -y && yum install openssh-client git -y ) '
+        - eval $(ssh-agent -s)
+        - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+        - mkdir -p ~/.ssh
+        - chmod 700 ~/.ssh
+        - ssh-keyscan 124.222.139.8 >> ~/.ssh/known_hosts
+        - chmod 644 ~/.ssh/known_hosts
+    script:
+        - scp -r dist root@124.222.139.8:/usr/local/www
+        # - ssh -tt root@120.77.178.9

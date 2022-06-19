@@ -1,0 +1,111 @@
+# 定义一些变量, 下面各阶段会使用
+variables:
+  server_ip: 124.222.139.8
+  jar_name: backend-crowdsourcedtesting-0.0.1-SNAPSHOT.jar
+  java_path: /usr/local/java1.8/bin
+  upload_path: /usr/local/gitlab-project
+  test_path: /usr/local/testHtml
+  jacoco_path: /usr/local/jacocoHtml
+
+
+
+# 定义执行的各个阶段及顺序
+stages:
+  - build
+  - test
+  - upload
+  - stop
+  - deploy
+
+
+# 使用 maven 镜像打包项目
+maven-build:
+  stage: build
+  image: maven:3-jdk-8
+  script:
+    - mvn package -B -Dmaven.test.skip=true
+  cache:
+    key: m2-repo
+    paths:
+      - .m2/repository
+  artifacts:
+    paths:
+      - target/$jar_name
+  tags:
+    - backend
+
+test:
+  stage: test
+  image: maven:3-jdk-8
+  tags:
+    - backend
+  before_script:
+    - 'which ssh-agent || ( yum update -y && yum install openssh-client git -y ) '
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 124.222.139.8 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - mvn surefire-report:report
+    - ls -l target/site/
+    - scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no test.sh root@$server_ip:/usr/local
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$server_ip "sh /usr/local/test.sh /usr/local/testHtml"
+    - scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no target/site/surefire-report.html root@$server_ip:$test_path/index.html
+    - mvn jacoco:report
+    - ls -l target/site/
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$server_ip "sh /usr/local/test.sh /usr/local/jacocoHtml"
+    - scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no target/site/jacoco/index.html root@$server_ip:$jacoco_path/index.html
+
+
+# 上传生成的 jar 包到你的应用服务器，这里使用 ictu/sshpass 这个镜像，是为了使用 sshpass 命令
+upload-jar:
+  stage: upload
+  tags:
+    - backend
+  before_script:
+    - 'which ssh-agent || ( yum update -y && yum install openssh-client git -y ) '
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 124.222.139.8 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ls -l target/
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$server_ip "sh /usr/local/test.sh /usr/local/gitlab-project"
+    - scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no target/$jar_name root@$server_ip:$upload_path/$jar_name
+
+
+# 启动 SpringBoot jar包
+deploy-test:
+  stage: stop
+  tags:
+    - backend
+  before_script:
+    - 'which ssh-agent || ( yum update -y && yum install openssh-client git -y ) '
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 124.222.139.8 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$server_ip "netstat -tunlp|grep 8082|awk '{print \$7}'|cut -d '/' -f 1|xargs test -z || netstat -tunlp|grep 8082|awk '{print \$7}'|cut -d '/' -f 1|xargs kill"
+
+
+deploy-final:
+  stage: deploy
+  tags:
+    - backend
+  before_script:
+    - 'which ssh-agent || ( yum update -y && yum install openssh-client git -y ) '
+    - eval $(ssh-agent -s)
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - ssh-keyscan 124.222.139.8 >> ~/.ssh/known_hosts
+    - chmod 644 ~/.ssh/known_hosts
+  script:
+    - ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$server_ip "nohup java -jar $upload_path/$jar_name --server.port=8082 >/dev/null 2>&1 &"

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.collect.mapper.CommentMapper">
+    <resultMap id="commentView" type="com.collect.po.Comment">
+        <id column="id" property="id"/>
+        <result column="reportId" property="reportId"/>
+        <result column="userId" property="userId"/>
+        <result column="mark" property="mark"/>
+        <result column="comment" property="comment"/>
+        <result column="name" property="name"/>
+        <result column="email" property="email"/>
+    </resultMap>
+    <resultMap id="commentView2" type="com.collect.po.Comment">
+        <id column="id" property="id"/>
+        <result column="reportId" property="reportId"/>
+        <result column="userId" property="userId"/>
+        <result column="mark" property="mark"/>
+        <result column="comment" property="comment"/>
+    </resultMap>
+    <select id="selectCommentByReportId" resultMap="commentView">
+        select c1.id as id,
+               c1.reportId as reportId,
+               c1.userId as userId,
+               c1.mark as mark,
+               c1.comment as comment,
+               u1.name as name,
+               u1.email as email
+        from comment c1 inner join user u1 on c1.userId=u1.id and c1.reportId= #{reportId} ;
+    </select>
+    <select id="selectComment" resultMap="commentView2">
+        select c.id as id,
+               c.reportId as reportId,
+               c.userId as userId,
+               c.mark as mark,
+               c.comment as comment
+        from comment c where c.userId=#{userId} and c.reportId=#{reportId}
+    </select>
+</mapper>

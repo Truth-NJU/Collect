@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.collect.mapper.TaskMapperWrapper$TaskMapper">
+    <resultMap id="workersView" type="com.collect.po.Task">
+        <id column="id" property="id"/>
+        <result column="name" property="name"/>
+        <result column="number" property="number"/>
+        <result column="remain" property="remain"/>
+        <result column="tag" property="tag"/>
+        <result column="date" property="date"/>
+        <result column="introduction" property="introduction"/>
+    </resultMap>
+    <select id="selectTaskByLabel" resultType="com.collect.po.Task">
+        select * from task where 1=1
+        <if test="if_finished!=null">
+            <if test="if_finished==0">
+                and task.date &gt; #{now_time}
+            </if>
+            <if test="if_finished==1">
+                and #{now_time} &gt; task.date
+            </if>
+        </if>
+        <if test="tag!=null">
+            and tag=#{tag}
+        </if>
+        <if test="name!=null">
+            and name like "%"#{name}"%"
+        </if>
+        order by task.remain DESC
+    </select>
+
+<!--    <select id="recommendAll" resultType="java.lang.Integer">-->
+<!--        select id-->
+<!--        from task-->
+<!--        where id >= (select (max(id) - min(id)) * rand() + min(id) from task)-->
+<!--        limit #{limit};-->
+<!--    </select>-->
+
+<!--    <select id="recommendByLabel" resultType="java.lang.Integer">-->
+<!--        select id from (select id from task where-->
+<!--        <if test="if_finished!=null">-->
+<!--            <if test="if_finished==0">-->
+<!--                and task.date &gt; #{now_time}-->
+<!--            </if>-->
+<!--            <if test="if_finished==1">-->
+<!--                and #{now_time} &gt; task.date-->
+<!--            </if>-->
+<!--        </if>-->
+<!--        <if test="tag!=null">-->
+<!--            and tag=#{tag}-->
+<!--        </if>-->
+<!--        ) t where t.id >= (select (max(t2.id) - min(t2.id)) * rand() + min(t2.id) from-->
+<!--        (select id from task where-->
+<!--        <if test="if_finished!=null">-->
+<!--            <if test="if_finished==0">-->
+<!--                and task.date &gt; #{now_time}-->
+<!--            </if>-->
+<!--            <if test="if_finished==1">-->
+<!--                and #{now_time} &gt; task.date-->
+<!--            </if>-->
+<!--        </if>-->
+<!--        <if test="tag!=null">-->
+<!--            and tag=#{tag}-->
+<!--        </if>-->
+<!--        ) t2)-->
+<!--        limit #{limit}-->
+<!--    </select>-->
+
+    <select id="recommendAll" resultType="java.lang.Integer">
+        select id
+        from task
+        order by rand()
+        limit #{limit};
+    </select>
+
+    <select id="recommendByLabel" resultType="java.lang.Integer">
+        select id from (select id from task where true
+        <if test="if_finished!=null">
+            <if test="if_finished==0">
+                and task.date &gt; #{now_time}
+            </if>
+            <if test="if_finished==1">
+                and #{now_time} &gt; task.date
+            </if>
+        </if>
+        <if test="tag!=null">
+            and tag=#{tag}
+        </if>
+        ) t
+        order by rand()
+        limit #{limit}
+    </select>
+    <select id="selectInIdList" resultMap="workersView">
+        select t1.id as id,
+        userId,
+        name,
+        number,
+        remain,
+        tag,
+        date,
+        introduction
+        from task t1
+        inner join (select id from task where id in
+        <foreach collection="list" item="ids" index="index" open="(" close=")" separator=",">
+            #{ids}
+        </foreach>
+        ) t2
+        on t1.id = t2.id
+    </select>
+
+    <select id="selectByIdWorkView" resultMap="workersView">
+        select id,
+               userId,
+               name,
+               number,
+               remain,
+               tag,
+               date,
+               introduction,
+               device
+        from task
+        where id = #{taskId}
+    </select>
+</mapper>

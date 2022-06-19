@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.collect.mapper.WorkMapper">
+    <resultMap id="userTaskListResultMap" type="com.collect.po.UserWorkList">
+        <id property="userId" column="userId"/>
+        <collection property="taskId" ofType="java.lang.Integer" javaType="java.util.ArrayList">
+            <result column="taskId" property="taskId"/>
+        </collection>
+    </resultMap>
+    <select id="findUsersTaskPartIn" resultMap="userTaskListResultMap">
+        select taskId,
+        w1.userId as userId
+        from (select taskId, userId from work) w1 inner join
+        (select distinct userId from work where taskId in
+        <foreach collection="list" item="taskIds" index="index" open="(" close=")" separator=",">
+            #{taskIds}
+        </foreach>
+        ) w2 on w1.userId = w2.userId
+    </select>
+
+    <select id="selectPartTasksByUserId" resultType="java.lang.Integer">
+        select taskId
+        from work
+        where userId = #{userId}
+    </select>
+</mapper>

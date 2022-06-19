@@ -1,0 +1,33 @@
+spring:
+#  datasource:
+#      url: jdbc:mysql://localhost:3306/collect?setUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+#      driver-class-name: com.mysql.cj.jdbc.Driver
+#      username: root
+#      password: tzh444582
+
+  servlet:
+    multipart:
+      max-file-size: -1 #设置允许单个文件上传的大小
+      max-request-size: -1 #设置允许上传的总的文件的大小
+
+  datasource:
+    url: jdbc:mysql://124.222.139.8:3306/collect?setUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&allowMultiQueries=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: smtc
+    password: 12345678
+
+
+mybatis-plus:
+  typeEnumsPackage: com.collect.po.enums
+  configuration:
+    default-enum-type-handler: org.apache.ibatis.type.EnumOrdinalTypeHandler
+  mapper-locations: classpath*:mapper/*Xml.xml
+
+token:
+  secret-key: 12345678
+  ttl: 3600000
+
+file:
+  task_decr: /file/publish/description
+  task_publish: /file/publish/exe
+  report-img: /file/report_img
